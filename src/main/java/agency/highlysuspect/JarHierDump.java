@@ -5,10 +5,10 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Opcodes;
 
 import java.io.BufferedInputStream;
-import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -25,10 +25,9 @@ public class JarHierDump implements Opcodes {
 			System.exit(1);
 		}
 		
-		try(
-			ZipInputStream zip = new ZipInputStream(new BufferedInputStream(Files.newInputStream(input)));
-			PrintWriter out = new PrintWriter(System.out)
-		) {
+		SortedSet<Entry> entries = new TreeSet<>();
+		
+		try(ZipInputStream zip = new ZipInputStream(new BufferedInputStream(Files.newInputStream(input)))) {
 			ZipEntry entry;
 			while((entry = zip.getNextEntry()) != null) {
 				if(entry.getName().endsWith(".class")) {
@@ -38,14 +37,7 @@ public class JarHierDump implements Opcodes {
 						public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
 							//superName can be null for module-info classes, as well as java/lang/Object itself
 							if(superName != null) {
-								out.print(name);
-								out.print(',');
-								out.print(superName);
-								for(String itf : interfaces) {
-									out.print(',');
-									out.print(itf);
-								}
-								out.println();
+								entries.add(new Entry(name, superName, interfaces));
 							}
 							
 							super.visit(version, access, name, signature, superName, interfaces);
@@ -54,5 +46,49 @@ public class JarHierDump implements Opcodes {
 				}
 			}
 		}
+		
+		entries.forEach(Entry::print);
+	}
+	
+	static class Entry implements Comparable<Entry> {
+		public Entry(String name, String superName, String[] interfaces) {
+			this.name = name;
+			this.superName = superName;
+			this.interfaces = interfaces;
+		}
+		
+		final String name;
+		final String superName;
+		final String[] interfaces;
+		
+		@Override
+		public int compareTo(Entry o) {
+			return name.compareTo(o.name);
+		}
+		
+		@Override
+		public boolean equals(Object o) {
+			if(this == o) return true;
+			if(o == null || getClass() != o.getClass()) return false;
+			Entry entry = (Entry) o;
+			return name.equals(entry.name);
+		}
+		
+		@Override
+		public int hashCode() {
+			return name.hashCode();
+		}
+		
+		void print() {
+			System.out.print(name);
+			System.out.print(',');
+			System.out.print(superName);
+			for(String itf : interfaces) {
+				System.out.print(',');
+				System.out.print(itf);
+			}
+			System.out.println();
+		}
+		
 	}
 }

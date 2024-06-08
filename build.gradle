@@ -2,7 +2,7 @@ apply plugin: "java"
 apply plugin: "application"
 
 group = "agency.highlysuspect"
-version = "1.0"
+version = "1.1"
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(8)
 compileJava {
