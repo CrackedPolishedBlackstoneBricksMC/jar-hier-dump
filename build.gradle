@@ -1,0 +1,39 @@
+apply plugin: "java"
+apply plugin: "application"
+
+group = "agency.highlysuspect"
+version = "1.0"
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(8)
+compileJava {
+    sourceCompatibility = "8"
+    targetCompatibility = "8"
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation "org.ow2.asm:asm:9.7"
+}
+
+application {
+    mainClass = "agency.highlysuspect.JarHierDump"
+}
+
+tasks.register("fat", Jar) {
+    manifest {
+        attributes "Main-Class": project.application.mainClass
+    }
+    archiveClassifier = "all"
+    from {
+        configurations.runtimeClasspath.collect {it.isDirectory() ? it : zipTree(it)}
+    }
+    with jar
+}
+
+//What
+tasks.named("run").configure {
+    it.dependsOn(tasks.named("build"))
+}
